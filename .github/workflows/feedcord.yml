@@ -1,0 +1,49 @@
+name: FeedCord RSS Check
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"  # chạy mỗi 15 phút
+  workflow_dispatch:        # cho phép chạy thủ công
+
+jobs:
+  run-feedcord:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup .NET SDK 8
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Clone FeedCord repo
+        run: git clone https://github.com/Qolors/FeedCord.git
+
+      - name: Setup config
+        run: |
+          mkdir -p FeedCord/config
+          echo '{
+            "Instances": [
+              {
+                "Id": "NovelUpdatesFeed",
+                "YoutubeUrls": [],
+                "RssUrls": [
+                  "https://rssnovelupdates.com/rss.php?uid=83336&unq=5948b7d23ac79&type=read"
+                ],
+                "Forum": false,
+                "DiscordWebhookUrl": "${{ secrets.DISCORD_WEBHOOK }}",
+                "RssCheckIntervalMinutes": 15,
+                "EnableAutoRemove": false,
+                "Color": 8411391,
+                "DescriptionLimit": 250,
+                "MarkdownFormat": false,
+                "PersistenceOnShutdown": true
+              }
+            ],
+            "ConcurrentRequests": 40
+          }' > FeedCord/config/appsettings.json
+
+      - name: Run FeedCord
+        run: dotnet FeedCord/FeedCord.dll
